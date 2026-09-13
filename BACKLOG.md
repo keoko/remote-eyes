@@ -49,10 +49,14 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   app now uses `wss://` end to end; `helper.html`'s WebSocket URL had to
   become scheme-aware to avoid a mixed-content error, and Android's
   `usesCleartextTraffic` was removed since it's no longer needed.
-- [ ] Add basic rate limiting to the 6-digit join code — now more
-  important than before: the join code is reachable from the whole
-  internet, not just the home LAN, so it's genuinely brute-forceable by
-  anyone, not just someone already on the network.
+- [x] Add basic rate limiting to the 6-digit join code — tracks `join`
+  attempts per source IP in-memory (`joinAttempts` Map, same pattern as
+  `sessions`), capped at 10 attempts per 5-minute window matching
+  `SESSION_TTL`. Not hardened against a distributed attacker with many
+  IPs — proportionate to this app's actual threat model (a casual
+  stranger, not a sophisticated attack), not gold-plated. Verified both
+  locally and against the live production server: attempts 1-10 get the
+  normal "Invalid or expired help code," 11+ get rate-limited.
 - [ ] Improve `helper.html`'s UI/UX — it's currently a bare-bones page
   (plain input + button + status line). Used by whoever is helping (not the
   parents), so lower priority than the Android redesign, but clearer

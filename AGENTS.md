@@ -55,10 +55,14 @@ protocol.
   gets back a random 6-digit code with a 5-minute TTL; a helper sends `join`
   with that code. The server only relays SDP offers/answers and ICE
   candidates between the connection tagged `role: "phone"` and the one
-  tagged `role: "helper"` — it has no understanding of WebRTC itself, and
-  the join code has no rate limiting. Sessions live in an in-memory `Map`,
-  **not shared across machines** — this is why the Fly app runs exactly one
-  machine (see Deployment below).
+  tagged `role: "helper"` — it has no understanding of WebRTC itself.
+  `join` attempts are rate-limited per source IP (`joinAttempts` Map, 10
+  attempts per 5-minute window, matching `SESSION_TTL`) — proportionate to
+  this app's actual threat model (a casual stranger guessing codes, not a
+  distributed attacker with many IPs), not hardened against a
+  sophisticated attack. Sessions live in an in-memory `Map`, **not shared
+  across machines** — this is why the Fly app runs exactly one machine
+  (see Deployment below).
 
 - **Android service architecture**: `MainActivity` only handles the UI and
   the `MediaProjection` permission flow; it hands off to

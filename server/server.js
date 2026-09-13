@@ -7,8 +7,25 @@ const path = require("path");
 
 const PORT = 8080;
 const SESSION_TTL = 5 * 60 * 1000;
+const JOIN_RATE_LIMIT = 10;
+const JOIN_RATE_WINDOW = SESSION_TTL;
 
 const sessions = new Map();
+const joinAttempts = new Map();
+
+function isRateLimited(ip) {
+    const now = Date.now();
+    const entry = joinAttempts.get(ip);
+
+    if (!entry || now - entry.windowStart > JOIN_RATE_WINDOW) {
+        joinAttempts.set(ip, { count: 1, windowStart: now });
+        return false;
+    }
+
+    entry.count += 1;
+
+    return entry.count > JOIN_RATE_LIMIT;
+}
 
 let turnCache = { iceServers: [], expiresAt: 0 };
 
@@ -216,8 +233,10 @@ const server = http.createServer((req, res) => {
 
 const wss = new WebSocket.Server({ server });
 
-wss.on("connection", (ws) => {
+wss.on("connection", (ws, req) => {
     console.log("Client connected");
+
+    ws.ip = req.socket.remoteAddress;
 
     ws.on("message", (data) => {
         let message;
@@ -238,6 +257,14 @@ wss.on("connection", (ws) => {
                 break;
 
             case "join":
+                if (isRateLimited(ws.ip)) {
+                    send(ws, {
+                        type: "error",
+                        message: "Too many attempts. Please wait a few minutes and try again."
+                    });
+                    break;
+                }
+
                 joinSession(ws, message.code);
                 break;
 
