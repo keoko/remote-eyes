@@ -68,10 +68,3 @@ The app is localized in English, Catalan, and Spanish (`res/values-ca`,
 `res/values-es`), and its UI is deliberately dead-simple — one toggle
 button and a big code display — since the actual users are the
 maintainer's elderly, non-technical parents, not a general audience.
-
-## Known limitations
-
-- The 6-digit join code is rate-limited per IP (10 attempts per 5-minute
-  window) but not hardened against a distributed attacker with many IPs —
-  proportionate to the actual threat model (a casual stranger guessing
-  codes), not a sophisticated attack.
