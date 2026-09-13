@@ -6,3 +6,6 @@ build
 
 # Ignore Kotlin plugin data
 .kotlin
+
+# Machine-specific config (e.g. SIGNALING_URL)
+local.properties

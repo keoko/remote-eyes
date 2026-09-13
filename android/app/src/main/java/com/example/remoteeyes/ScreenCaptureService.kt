@@ -65,17 +65,6 @@ companion object {
     private const val STOP_REQUEST_CODE =
         2001
 
-    /*
-     * Signaling server.
-     *
-     * Emulator -> host machine:
-     * 10.0.2.2
-     *
-     * Real device -> computer LAN IP.
-     */
-    private const val SIGNALING_URL =
-        "ws://192.168.2.114:8080"
-
     var uiListener: UiListener? = null
 }
 
@@ -531,12 +520,12 @@ private fun setupSignaling() {
 
     Log.d(
         TAG,
-        "Connecting to signaling server: $SIGNALING_URL"
+        "Connecting to signaling server: ${BuildConfig.SIGNALING_URL}"
     )
 
     signalingClient =
         SignalingClient(
-            SIGNALING_URL,
+            BuildConfig.SIGNALING_URL,
             this
         )
 

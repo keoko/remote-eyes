@@ -9,7 +9,7 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   currently duplicates its WebRTC init logic inline instead of using it.
 - [ ] Request `POST_NOTIFICATIONS` permission at runtime on Android 13+, so
   the "Stop sharing" foreground notification actually shows up.
-- [ ] Make `SIGNALING_URL` configurable instead of hardcoded in
+- [x] Make `SIGNALING_URL` configurable instead of hardcoded in
   `ScreenCaptureService.kt` — currently needs a source edit per network
   (emulator vs. LAN IP vs. parent's real network).
 - [ ] Localize the app to Catalan — the target users (the maintainer's

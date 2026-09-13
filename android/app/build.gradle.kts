@@ -1,6 +1,20 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
 }
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        load(FileInputStream(file))
+    }
+}
+
+val signalingUrl: String =
+    localProperties.getProperty("SIGNALING_URL")
+        ?: "ws://192.168.2.114:8080"
 
 android {
     namespace = "com.example.remoteeyes"
@@ -12,6 +26,12 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField("String", "SIGNALING_URL", "\"$signalingUrl\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 }
 
