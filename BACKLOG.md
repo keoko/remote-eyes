@@ -16,18 +16,23 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   `ScreenCaptureService.kt` — currently needs a source edit per network
   (emulator vs. LAN IP vs. parent's real network).
 - [ ] Localize the app to Catalan — the target users (the maintainer's
-  parents) are Catalan speakers. UI strings are currently hardcoded English
-  literals in `MainActivity.kt` (e.g. "Ready", "Share screen", "Help code: …
-  Waiting for helper...") rather than Android string resources, so this
-  needs extracting them into `res/values/strings.xml` first, then adding a
-  `res/values-ca/strings.xml` translation.
-- [ ] Redesign the Android UI to be dead simple for elderly users —
-  `MainActivity.kt` currently builds a plain `LinearLayout` with default-size
-  buttons/text and multi-step status copy. Needs large touch targets and
-  text, minimal steps (ideally one obvious action), plain non-technical
-  language for status messages, and high contrast. Should be designed with
-  the actual end users (the maintainer's parents) in mind, not a general
-  audience.
+  parents) are Catalan speakers. All UI strings now live in
+  `res/values/strings.xml` (English, extracted during the UI redesign
+  below), so this is now a pure translation pass: add
+  `res/values-ca/strings.xml` with Catalan copy for the same keys.
+- [x] Redesign the Android UI to be dead simple for elderly users — one
+  toggle button (green "Share my screen" ↔ red "Stop sharing") instead of
+  two always-visible buttons; the help code gets its own huge (72sp), bold,
+  paired-digit display ("48 27 31") separate from the status line, since
+  that's the moment a parent reads digits aloud over the phone; all status
+  copy rewritten to plain language in both `MainActivity.kt` and
+  `ScreenCaptureService.kt` (no more "WebRTC connection failed" or raw
+  exception text); `FLAG_KEEP_SCREEN_ON` added so the screen can't time out
+  mid-session; all text extracted to `res/values/strings.xml` (English,
+  Catalan translation deferred to the localization item below). **Not yet
+  visually verified** — no way to render/screenshot the UI from the dev
+  environment; needs your eyes on a real device, likely a follow-up polish
+  round once you see it.
 
 ## Server (`server/`)
 

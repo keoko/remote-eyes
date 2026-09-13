@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Remote Eyes</string>
+
+    <string name="ready_status">Ready to help</string>
+    <string name="share_button">Share my screen</string>
+    <string name="stop_button">Stop sharing</string>
+
+    <string name="requesting_permission">One moment…</string>
+    <string name="starting_status">Starting…</string>
+    <string name="share_cancelled">Cancelled</string>
+
+    <string name="code_label">Your code</string>
+    <string name="waiting_for_helper">Waiting for someone to connect…</string>
+    <string name="helper_connected_status">Connected! Sharing your screen now.</string>
+
+    <string name="stopping_status">Stopping…</string>
+    <string name="stopped_status">Sharing stopped.</string>
+    <string name="helper_disconnected_status">Disconnected.</string>
+    <string name="session_expired_status">Code expired. Tap Share to get a new one.</string>
+    <string name="generic_error_status">Something went wrong. Please try again.</string>
+    <string name="connection_failed_status">Connection problem. Please try again.</string>
+
+    <string name="notification_title">Screen sharing</string>
+    <string name="notification_text">Your screen is being shared</string>
+    <string name="notification_stop_action">Stop sharing</string>
+</resources>

@@ -596,7 +596,7 @@ override fun onPeerDisconnected() {
     mainHandler.post {
 
         uiListener?.onStatus(
-            "Helper disconnected"
+            getString(R.string.helper_disconnected_status)
         )
     }
 }
@@ -611,7 +611,7 @@ override fun onSessionExpired() {
     mainHandler.post {
 
         uiListener?.onStatus(
-            "Session expired"
+            getString(R.string.session_expired_status)
         )
     }
 
@@ -732,7 +732,7 @@ override fun onError(
     mainHandler.post {
 
         uiListener?.onStatus(
-            "Error: $message"
+            getString(R.string.generic_error_status)
         )
     }
 }
@@ -914,7 +914,7 @@ private fun createPeerConnectionAndOffer(
                             mainHandler.post {
 
                                 uiListener?.onStatus(
-                                    "WebRTC connection failed"
+                                    getString(R.string.connection_failed_status)
                                 )
                             }
                         }
@@ -1167,7 +1167,7 @@ private fun stopScreenCapture() {
     mainHandler.post {
 
         uiListener?.onStatus(
-            "Stopping screen sharing..."
+            getString(R.string.stopping_status)
         )
     }
 
@@ -1406,7 +1406,7 @@ private fun stopScreenCapture() {
     mainHandler.post {
 
         uiListener?.onStatus(
-            "Screen sharing stopped."
+            getString(R.string.stopped_status)
         )
     }
 
@@ -1473,12 +1473,12 @@ private fun createNotificationChannel() {
     val channel =
         NotificationChannel(
             CHANNEL_ID,
-            "Screen sharing",
+            getString(R.string.notification_title),
             NotificationManager.IMPORTANCE_LOW
         )
 
     channel.description =
-        "Screen sharing is active"
+        getString(R.string.notification_text)
 
     val manager =
         getSystemService(
@@ -1527,10 +1527,10 @@ private fun startForegroundNotification() {
                 CHANNEL_ID
             )
                 .setContentTitle(
-                    "Screen sharing"
+                    getString(R.string.notification_title)
                 )
                 .setContentText(
-                    "Your screen is being shared"
+                    getString(R.string.notification_text)
                 )
                 .setSmallIcon(
                     android.R.drawable.ic_menu_view
@@ -1539,7 +1539,7 @@ private fun startForegroundNotification() {
                 .addAction(
                     Notification.Action.Builder(
                         null,
-                        "Stop sharing",
+                        getString(R.string.notification_stop_action),
                         stopPendingIntent
                     ).build()
                 )
@@ -1551,10 +1551,10 @@ private fun startForegroundNotification() {
         notification =
             Notification.Builder(this)
                 .setContentTitle(
-                    "Screen sharing"
+                    getString(R.string.notification_title)
                 )
                 .setContentText(
-                    "Your screen is being shared"
+                    getString(R.string.notification_text)
                 )
                 .setSmallIcon(
                     android.R.drawable.ic_menu_view
@@ -1563,7 +1563,7 @@ private fun startForegroundNotification() {
                 .addAction(
                     Notification.Action.Builder(
                         null,
-                        "Stop sharing",
+                        getString(R.string.notification_stop_action),
                         stopPendingIntent
                     ).build()
                 )
