@@ -40,3 +40,10 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
 - [ ] Add a TURN server to the ICE config (both `ScreenCaptureService.kt`
   and `helper.html` are STUN-only today) — connections across some NAT
   configurations may otherwise fail to establish.
+- [ ] Add automated tests — neither sub-project has any today. `server/`'s
+  `npm test` is just a placeholder that errors; `android/`'s
+  `testDebugUnitTest` Gradle task exists but has no test sources. Best
+  starting point is probably `server/server.js`'s session/signaling logic
+  (`createSession`, `joinSession`, `relaySignal`, `removeClient`) — it's
+  plain functions operating on the `sessions` map, testable without a real
+  WebSocket server.
