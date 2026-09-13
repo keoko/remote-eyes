@@ -28,8 +28,18 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
 
 ## Server (`server/`)
 
-- [ ] Add basic rate limiting to the 6-digit join code — currently
-  unlimited join attempts within the 5-minute session TTL.
+- [x] Make the signaling server reachable from outside the LAN — deployed
+  to Fly.io (`remote-eyes-server.fly.dev`, single machine — the in-memory
+  `sessions` map isn't shared, so more than one machine would cause
+  intermittent "Invalid or expired help code" errors depending on which
+  machine handled which request). Fly terminates TLS at the edge, so the
+  app now uses `wss://` end to end; `helper.html`'s WebSocket URL had to
+  become scheme-aware to avoid a mixed-content error, and Android's
+  `usesCleartextTraffic` was removed since it's no longer needed.
+- [ ] Add basic rate limiting to the 6-digit join code — now more
+  important than before: the join code is reachable from the whole
+  internet, not just the home LAN, so it's genuinely brute-forceable by
+  anyone, not just someone already on the network.
 - [ ] Improve `helper.html`'s UI/UX — it's currently a bare-bones page
   (plain input + button + status line). Used by whoever is helping (not the
   parents), so lower priority than the Android redesign, but clearer

@@ -167,8 +167,10 @@ joinButton.onclick = () => {
 
     log("Connecting...");
 
+    const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+
     socket = new WebSocket(
-        "ws://" + window.location.host
+        wsProtocol + window.location.host
     );
 
     socket.onopen = () => {

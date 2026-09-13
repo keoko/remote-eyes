@@ -20,8 +20,7 @@
     <application
         android:allowBackup="true"
         android:label="Remote Eyes"
-        android:supportsRtl="true"
-        android:usesCleartextTraffic="true">
+        android:supportsRtl="true">
 
         <activity
             android:name=".MainActivity"
