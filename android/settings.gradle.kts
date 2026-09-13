@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "hello-android"
+rootProject.name = "remote-eyes-android"
 include(":app")

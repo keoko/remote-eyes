@@ -19,7 +19,7 @@
 
     <application
         android:allowBackup="true"
-        android:label="Hello"
+        android:label="Remote Eyes"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true">
 

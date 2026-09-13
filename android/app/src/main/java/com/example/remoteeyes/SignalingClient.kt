@@ -1,4 +1,4 @@
-package com.example.hello
+package com.example.remoteeyes
 
 import android.util.Log
 import okhttp3.OkHttpClient

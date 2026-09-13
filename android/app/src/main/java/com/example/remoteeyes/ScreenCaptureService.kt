@@ -1,4 +1,4 @@
-package com.example.hello
+package com.example.remoteeyes
 
 import android.app.Activity
 import android.app.Notification
@@ -47,10 +47,10 @@ companion object {
     private const val TAG = "HELP_WEBRTC"
 
     const val ACTION_START =
-        "com.example.hello.START_SCREEN_CAPTURE"
+        "com.example.remoteeyes.START_SCREEN_CAPTURE"
 
     const val ACTION_STOP =
-        "com.example.hello.STOP_SCREEN_CAPTURE"
+        "com.example.remoteeyes.STOP_SCREEN_CAPTURE"
 
     const val EXTRA_RESULT_CODE =
         "resultCode"

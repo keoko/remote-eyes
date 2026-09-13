@@ -1,4 +1,4 @@
-package com.example.hello
+package com.example.remoteeyes
 
 import android.app.Activity
 import android.content.Intent

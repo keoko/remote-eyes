@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.hello"
+    namespace = "com.example.remoteeyes"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.hello"
+        applicationId = "com.example.remoteeyes"
         minSdk = 23
         targetSdk = 36
         versionCode = 1
