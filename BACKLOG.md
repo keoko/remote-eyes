@@ -47,9 +47,17 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
 
 ## Cross-cutting
 
-- [ ] Add a TURN server to the ICE config (both `ScreenCaptureService.kt`
-  and `helper.html` are STUN-only today) — connections across some NAT
-  configurations may otherwise fail to establish.
+- [x] Add a TURN server to the ICE config — used Metered.ca's free tier
+  (20GB/month, expiring credentials generated server-side only, never
+  shipped to either client since an APK is trivially reverse-engineered).
+  `server.js` caches a 24h credential and exposes it at `/ice-config`;
+  both `helper.html` and `ScreenCaptureService.kt` fetch from there instead
+  of hardcoding STUN-only. Fly app switched to always-on
+  (`min_machines_running = 1`, right-sized to 256MB) since a freshly
+  minted credential can take up to ~2 minutes to propagate, which would
+  otherwise bite on every cold start given this app's sporadic usage
+  pattern. **Confirmed working on a real device**: phone on cellular data,
+  Wi-Fi off, video now appears in the helper's browser.
 - [ ] Add automated tests — neither sub-project has any today. `server/`'s
   `npm test` is just a placeholder that errors; `android/`'s
   `testDebugUnitTest` Gradle task exists but has no test sources. Best

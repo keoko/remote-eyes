@@ -99,14 +99,15 @@ function sendIceCandidate(candidate) {
     });
 }
 
-function createPeerConnection() {
-    peerConnection = new RTCPeerConnection({
-        iceServers: [
-            {
-                urls: "stun:stun.l.google.com:19302"
-            }
-        ]
-    });
+const iceServersPromise = fetch("/ice-config")
+    .then(r => r.json())
+    .then(config => config.iceServers)
+    .catch(() => [{ urls: "stun:stun.l.google.com:19302" }]);
+
+async function createPeerConnection() {
+    const iceServers = await iceServersPromise;
+
+    peerConnection = new RTCPeerConnection({ iceServers });
 
     peerConnection.onicecandidate = event => {
         if (event.candidate) {
@@ -189,7 +190,7 @@ joinButton.onclick = () => {
 
         if (message.type === "joined") {
             log("Joined. Waiting for screen...");
-            createPeerConnection();
+            await createPeerConnection();
             return;
         }
 

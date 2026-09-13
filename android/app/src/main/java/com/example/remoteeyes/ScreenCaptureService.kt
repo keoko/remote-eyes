@@ -15,7 +15,14 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import java.io.IOException
 
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import org.json.JSONArray
 import org.json.JSONObject
 import org.webrtc.DataChannel
 import org.webrtc.EglBase
@@ -571,7 +578,7 @@ override fun onHelperConnected() {
 
         uiListener?.onHelperConnected()
 
-        createPeerConnectionAndOffer()
+        fetchIceServersAndOffer()
     }
 }
 
@@ -738,7 +745,100 @@ override fun onClosed() {
 // PeerConnection
 // ==============================================================
 
-private fun createPeerConnectionAndOffer() {
+private fun fetchIceServersAndOffer() {
+
+    val iceConfigUrl =
+        BuildConfig.SIGNALING_URL
+            .replaceFirst("wss://", "https://")
+            .replaceFirst("ws://", "http://") +
+            "/ice-config"
+
+    val client = OkHttpClient()
+
+    val request =
+        Request.Builder()
+            .url(iceConfigUrl)
+            .build()
+
+    client.newCall(request).enqueue(object : Callback {
+
+        override fun onFailure(call: Call, e: IOException) {
+
+            Log.e(
+                TAG,
+                "Failed to fetch ICE config, falling back to STUN-only",
+                e
+            )
+
+            mainHandler.post {
+                createPeerConnectionAndOffer(defaultIceServers())
+            }
+        }
+
+        override fun onResponse(call: Call, response: Response) {
+
+            val servers =
+                try {
+                    parseIceServers(
+                        response.body?.string().orEmpty()
+                    )
+                } catch (e: Exception) {
+
+                    Log.e(
+                        TAG,
+                        "Failed to parse ICE config",
+                        e
+                    )
+
+                    defaultIceServers()
+                }
+
+            mainHandler.post {
+                createPeerConnectionAndOffer(servers)
+            }
+        }
+    })
+}
+
+private fun defaultIceServers(): List<PeerConnection.IceServer> =
+    listOf(
+        PeerConnection.IceServer
+            .builder("stun:stun.l.google.com:19302")
+            .createIceServer()
+    )
+
+private fun parseIceServers(json: String): List<PeerConnection.IceServer> {
+
+    val array = JSONObject(json).getJSONArray("iceServers")
+
+    return (0 until array.length()).map { i ->
+
+        val entry = array.getJSONObject(i)
+        val urlsValue = entry.get("urls")
+
+        val builder =
+            if (urlsValue is JSONArray) {
+                val urls = (0 until urlsValue.length()).map { urlsValue.getString(it) }
+                PeerConnection.IceServer.builder(urls)
+            } else {
+                PeerConnection.IceServer.builder(urlsValue as String)
+            }
+
+        if (entry.has("username")) {
+            builder.setUsername(entry.getString("username"))
+        }
+
+        if (entry.has("credential")) {
+            builder.setPassword(entry.getString("credential"))
+        }
+
+        builder.createIceServer()
+    }
+}
+
+private fun createPeerConnectionAndOffer(
+    iceServers: List<PeerConnection.IceServer>
+) {
 
     if (stopping) {
         return
@@ -753,15 +853,6 @@ private fun createPeerConnectionAndOffer() {
 
         return
     }
-
-    val iceServers =
-        listOf(
-            PeerConnection.IceServer
-                .builder(
-                    "stun:stun.l.google.com:19302"
-                )
-                .createIceServer()
-        )
 
     val rtcConfig =
         PeerConnection

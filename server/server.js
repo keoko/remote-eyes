@@ -10,6 +10,50 @@ const SESSION_TTL = 5 * 60 * 1000;
 
 const sessions = new Map();
 
+let turnCache = { iceServers: [], expiresAt: 0 };
+
+async function getTurnIceServers() {
+    if (turnCache.expiresAt > Date.now()) {
+        return turnCache.iceServers;
+    }
+
+    const domain = process.env.METERED_DOMAIN;
+    const secretKey = process.env.METERED_SECRET_KEY;
+
+    if (!domain || !secretKey) {
+        return [];
+    }
+
+    const expiryInSeconds = 24 * 60 * 60;
+
+    try {
+        const credResponse = await fetch(
+            `https://${domain}/api/v1/turn/credential?secretKey=${secretKey}`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ expiryInSeconds, label: "remote-eyes" })
+            }
+        );
+        const cred = await credResponse.json();
+
+        const iceResponse = await fetch(
+            `https://${domain}/api/v1/turn/credentials?apiKey=${cred.apiKey}`
+        );
+        const iceServers = await iceResponse.json();
+
+        turnCache = {
+            iceServers,
+            expiresAt: Date.now() + (expiryInSeconds - 300) * 1000
+        };
+
+        return iceServers;
+    } catch (err) {
+        console.error("Failed to fetch TURN credentials:", err);
+        return turnCache.iceServers;
+    }
+}
+
 function generateCode() {
     let code;
 
@@ -128,6 +172,19 @@ function removeClient(ws) {
 }
 
 const server = http.createServer((req, res) => {
+    if (req.url === "/ice-config") {
+        getTurnIceServers().then((turnServers) => {
+            const iceServers = [
+                { urls: "stun:stun.l.google.com:19302" },
+                ...turnServers
+            ];
+
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ iceServers }));
+        });
+        return;
+    }
+
     if (req.url === "/helper") {
         const file = fs.readFileSync(
             path.join(__dirname, "helper.html")
