@@ -1,0 +1,233 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Help - Remote Screen</title>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        input {
+            font-size: 24px;
+            width: 180px;
+            padding: 8px;
+        }
+
+        button {
+            font-size: 20px;
+            padding: 10px 20px;
+            margin-left: 10px;
+        }
+
+        #status {
+            margin: 20px 0;
+            font-size: 20px;
+        }
+
+        video {
+            width: 100%;
+            background: #111;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Help session</h1>
+
+<div>
+    <input id="code" placeholder="482731" maxlength="6">
+    <button id="join">Join</button>
+</div>
+
+<div id="status">Enter the help code.</div>
+
+<video id="screen" autoplay playsinline></video>
+
+<script>
+const codeInput = document.getElementById("code");
+const joinButton = document.getElementById("join");
+const status = document.getElementById("status");
+const video = document.getElementById("screen");
+
+let socket;
+let peerConnection;
+
+function log(message) {
+    console.log(message);
+    status.textContent = message;
+}
+
+function send(message) {
+    socket.send(JSON.stringify(message));
+}
+
+/*
+ * IMPORTANT:
+ *
+ * The Android app's SignalingClient speaks this exact shape:
+ *
+ *   { "type": "signal", "signalType": "offer" | "answer", "sdp": "..." }
+ *   { "type": "signal", "signalType": "ice-candidate",
+ *     "sdpMid": "...", "sdpMLineIndex": 0, "candidate": "..." }
+ *
+ * This page must send/receive the same field names or the two
+ * sides will silently never understand each other.
+ */
+
+function sendAnswer(sdp) {
+    send({
+        type: "signal",
+        signalType: "answer",
+        sdp: sdp
+    });
+}
+
+function sendIceCandidate(candidate) {
+    send({
+        type: "signal",
+        signalType: "ice-candidate",
+        sdpMid: candidate.sdpMid,
+        sdpMLineIndex: candidate.sdpMLineIndex,
+        candidate: candidate.candidate
+    });
+}
+
+function createPeerConnection() {
+    peerConnection = new RTCPeerConnection({
+        iceServers: [
+            {
+                urls: "stun:stun.l.google.com:19302"
+            }
+        ]
+    });
+
+    peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+            sendIceCandidate(event.candidate);
+        }
+    };
+
+    peerConnection.ontrack = event => {
+        console.log("Received remote track");
+
+        if (event.streams && event.streams[0]) {
+            video.srcObject = event.streams[0];
+        }
+    };
+
+    peerConnection.onconnectionstatechange = () => {
+        log("WebRTC: " + peerConnection.connectionState);
+    };
+
+    peerConnection.oniceconnectionstatechange = () => {
+        console.log("ICE connection state:", peerConnection.iceConnectionState);
+    };
+}
+
+async function handleOffer(sdp) {
+    await peerConnection.setRemoteDescription({
+        type: "offer",
+        sdp: sdp
+    });
+
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+
+    sendAnswer(answer.sdp);
+
+    log("Answer sent. Connecting...");
+}
+
+async function handleIceCandidate(json) {
+    try {
+        await peerConnection.addIceCandidate({
+            sdpMid: json.sdpMid,
+            sdpMLineIndex: json.sdpMLineIndex,
+            candidate: json.candidate
+        });
+    } catch (error) {
+        console.error("ICE candidate error:", error);
+    }
+}
+
+joinButton.onclick = () => {
+    const code = codeInput.value.replace(/\s/g, "");
+
+    if (code.length !== 6) {
+        log("Enter the six-digit code.");
+        return;
+    }
+
+    log("Connecting...");
+
+    socket = new WebSocket(
+        "ws://" + window.location.host
+    );
+
+    socket.onopen = () => {
+        log("Joining help session...");
+
+        send({
+            type: "join",
+            code: code
+        });
+    };
+
+    socket.onmessage = async event => {
+        const message = JSON.parse(event.data);
+
+        console.log("Signal:", message);
+
+        if (message.type === "joined") {
+            log("Joined. Waiting for screen...");
+            createPeerConnection();
+            return;
+        }
+
+        if (message.type === "signal") {
+            if (message.signalType === "offer") {
+                await handleOffer(message.sdp);
+            }
+
+            else if (message.signalType === "ice-candidate") {
+                await handleIceCandidate(message);
+            }
+
+            else {
+                console.log("Unhandled signalType:", message.signalType);
+            }
+        }
+
+        if (message.type === "peer-disconnected") {
+            log("Phone disconnected.");
+        }
+
+        if (message.type === "expired") {
+            log("Help session expired.");
+        }
+
+        if (message.type === "error") {
+            log("Error: " + message.message);
+        }
+    };
+
+    socket.onerror = error => {
+        console.error(error);
+        log("WebSocket error.");
+    };
+
+    socket.onclose = () => {
+        console.log("WebSocket closed");
+    };
+};
+</script>
+
+</body>
+</html>
