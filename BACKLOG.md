@@ -15,15 +15,16 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
 - [x] Make `SIGNALING_URL` configurable instead of hardcoded in
   `ScreenCaptureService.kt` — currently needs a source edit per network
   (emulator vs. LAN IP vs. parent's real network).
-- [x] Localize the app to Catalan — added `res/values-ca/strings.xml`
-  with Catalan copy for all keys (verified both the default and `ca`
-  configs are packaged in the built APK, with the correct translated
-  values). Also fixed a leftover from the UI redesign while touching these
-  strings: `code_label` ("Your code") existed but was never actually wired
-  into `MainActivity.kt` — added a small label above the big code display.
-  **Translation not yet reviewed by a native speaker** — drafted carefully
+- [x] Localize the app to Catalan and Spanish — added
+  `res/values-ca/strings.xml` and `res/values-es/strings.xml` with copy
+  for all keys (verified all three configs — default, `ca`, `es` — are
+  packaged in the built APK with the correct translated values). Also
+  fixed a leftover from the UI redesign while touching these strings:
+  `code_label` ("Your code") existed but was never actually wired into
+  `MainActivity.kt` — added a small label above the big code display.
+  **Neither translation reviewed by a native speaker** — drafted carefully
   but should be checked on a real device with the system language set to
-  Catalan.
+  each.
 - [x] Redesign the Android UI to be dead simple for elderly users — one
   toggle button (green "Share my screen" ↔ red "Stop sharing") instead of
   two always-visible buttons; the help code gets its own huge (72sp), bold,
