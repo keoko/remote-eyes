@@ -20,11 +20,17 @@ candidate tasks before assuming something needs inventing from scratch.
 ### Server (`server/`)
 
 - Install deps: `npm install` (run from `server/`)
-- Run the signaling server: `node server.js` (listens on port 8080, hardcoded
-  in `server.js`)
+- Run the signaling server locally: `node server.js` (listens on port 8080,
+  hardcoded in `server.js`)
 - Manually test the join flow from a terminal: `node cli-test-client.js`
 - No lint or real test script is configured yet (`npm test` is a placeholder
   that just exits with an error).
+- **Production deploy**: `flyctl deploy` from `server/` (app:
+  `remote-eyes-server`, config in `server/fly.toml` + `server/Dockerfile`).
+  Always-on (`min_machines_running = 1`) — see Architecture below for why.
+  TURN credentials are Fly secrets (`flyctl secrets set METERED_DOMAIN=...
+  METERED_SECRET_KEY=...`), never committed — `flyctl secrets list` to
+  check what's set without exposing values.
 
 ## Architecture
 
@@ -50,24 +56,54 @@ protocol.
   with that code. The server only relays SDP offers/answers and ICE
   candidates between the connection tagged `role: "phone"` and the one
   tagged `role: "helper"` — it has no understanding of WebRTC itself, and
-  the join code has no rate limiting.
+  the join code has no rate limiting. Sessions live in an in-memory `Map`,
+  **not shared across machines** — this is why the Fly app runs exactly one
+  machine (see Deployment below).
 
 - **Android service architecture**: `MainActivity` only handles the UI and
   the `MediaProjection` permission flow; it hands off to
   `ScreenCaptureService` (a foreground service) via `ACTION_START`/
   `ACTION_STOP` intents. `ScreenCaptureService` owns the entire WebRTC
-  lifecycle — `PeerConnectionFactory`, `ScreenCapturerAndroid`, the
-  `PeerConnection`, and the `SignalingClient` — and reports status back to
-  `MainActivity` through the static `ScreenCaptureService.UiListener`
-  callback (set/cleared in `MainActivity.onStart`/`onStop`). `WebRtcRuntime.kt`
-  is a leftover, currently-unused singleton for shared WebRTC init —
-  `ScreenCaptureService.initializeWebRtc()` duplicates that setup inline
-  instead of calling it.
+  lifecycle — the `PeerConnection`, `ScreenCapturerAndroid`, and the
+  `SignalingClient` — and reports status back to `MainActivity` through the
+  static `ScreenCaptureService.UiListener` callback (set/cleared in
+  `MainActivity.onStart`/`onStop`). `PeerConnectionFactory`/`EglBase` are
+  **not** owned per-session — `ScreenCaptureService` borrows the
+  process-lifetime singleton from `WebRtcRuntime` (`WebRtcRuntime.factory()`/
+  `.eglBase()`), since the WebRTC native library's global init must run
+  exactly once per process; `stopScreenCapture()` correspondingly must never
+  dispose them, only null out the local references.
 
-- The signaling server address is hardcoded (`SIGNALING_URL` in
-  `ScreenCaptureService.kt`) rather than configurable per build variant — it
-  must be edited by hand for the emulator (`ws://10.0.2.2:8080`) vs. a real
-  device on the LAN.
+- **Signaling server address**: configurable via `android/local.properties`
+  (gitignored) → `BuildConfig.SIGNALING_URL`, set in
+  `android/app/build.gradle.kts`. Not a source edit.
 
-- ICE is STUN-only on both sides (Google's public STUN server) — no TURN, so
-  connections across some NAT configurations may fail to establish.
+- **ICE/TURN**: both clients use Google's public STUN server plus a TURN
+  relay (Metered.ca) for cases STUN alone can't traverse (confirmed
+  necessary: cellular carrier-grade NAT). Neither client holds the Metered
+  secret key directly — per Metered's own guidance, credential generation
+  must stay server-side, and an APK is trivially reverse-engineered, so
+  baking in even a gitignored secret would still ship it to every device.
+  Instead, `server/server.js` caches a 24h TURN credential
+  (`getTurnIceServers()`) and serves it, plus the STUN entry, from
+  `GET /ice-config?code=<active session code>` — gated behind a
+  currently-active session (checked against the same `sessions` map) since
+  this repo is public and an unauthenticated version of this endpoint would
+  let anyone harvest working TURN credentials. An invalid/missing code gets
+  STUN-only back, not an error. `helper.html` fetches it when a code is
+  submitted; `ScreenCaptureService.kt` fetches it in
+  `fetchIceServersAndOffer()` using the code captured in `onHelpCode()`.
+
+## Deployment
+
+The Fly.io app (`remote-eyes-server`, Paris/`cdg`) runs **exactly one
+always-on machine** (`min_machines_running = 1` in `server/fly.toml`,
+right-sized to 256MB) — two deliberate constraints, not defaults left in
+place:
+- More than one machine would split the in-memory `sessions` map across
+  machines, causing intermittent "Invalid or expired help code" errors
+  depending on which machine a request landed on.
+- Scale-to-zero was tried and reverted: Metered's expiring credentials can
+  take up to ~2 minutes to propagate, and this app's usage is sporadic
+  enough that a cold start would risk minting a fresh, not-yet-usable
+  credential right when a real session needs it.

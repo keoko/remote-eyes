@@ -12,8 +12,9 @@ install on the helper's side, as little friction as possible on the phone.
 2. The server hands back a 6-digit code and shows it on the phone.
 3. A helper opens the server's `/helper` page, enters the code, and joins.
 4. The phone and the helper's browser exchange a WebRTC offer/answer and ICE
-   candidates through the server, then connect directly (or via STUN) and
-   stream the phone's screen.
+   candidates through the server, then connect directly, via STUN, or via a
+   TURN relay (for cases like cellular carrier-grade NAT, where STUN alone
+   usually can't establish a connection) and stream the phone's screen.
 5. The session is torn down when either side disconnects or after a 5-minute
    TTL.
 
@@ -26,23 +27,35 @@ install on the helper's side, as little friction as possible on the phone.
 
 ## Running the server
 
+**Production** is deployed to Fly.io at `wss://remote-eyes-server.fly.dev`
+(and `https://remote-eyes-server.fly.dev/helper` for the browser page),
+always-on (`min_machines_running = 1` — a single machine, since sessions
+live in an in-memory `Map` not shared across machines). Deploy changes with
+`flyctl deploy` from `server/`. TURN credentials (Metered.ca) are supplied
+via `flyctl secrets set METERED_DOMAIN=... METERED_SECRET_KEY=...` — never
+committed to the repo.
+
+**Locally**, for development:
 ```
 cd server
 npm install
 node server.js
 ```
-
 Listens on port `8080` by default (see `PORT` in `server.js`). The helper
-page is then available at `http://<server-host>:8080/helper`.
+page is then available at `http://localhost:8080/helper`. Without
+`METERED_DOMAIN`/`METERED_SECRET_KEY` set as environment variables, TURN is
+simply omitted and ICE falls back to STUN-only.
 
 `server/cli-test-client.js` is a small terminal script for manually testing
 the join flow against a running server, independent of the browser page.
 
 ## Running the Android app
 
-1. Point `SIGNALING_URL` in `ScreenCaptureService.kt` at your signaling
-   server (`ws://10.0.2.2:8080` for an emulator talking to a server on the
-   host machine, or your machine's LAN IP for a real device).
+1. Create `android/local.properties` (gitignored) with
+   `SIGNALING_URL=wss://remote-eyes-server.fly.dev` to point at production,
+   or `ws://10.0.2.2:8080` for an emulator talking to a local server, or
+   your machine's LAN IP for a real device on a local server. No source
+   edit needed — this is read into a `BuildConfig` field at build time.
 2. Build and install with `./gradlew assembleDebug`, or open `android/` in
    Android Studio.
 3. Tap "Share screen", grant the screen-capture permission, and the app will
@@ -50,9 +63,5 @@ the join flow against a running server, independent of the browser page.
 
 ## Known limitations
 
-- ICE uses a public STUN server only (no TURN), so connections across some
-  NATs — e.g. phone on cellular, helper elsewhere — may fail to establish.
 - The 6-digit join code has no rate limiting on the server, so it's not
   resistant to brute-forcing within its 5-minute lifetime.
-- The signaling connection is plain `ws://`/cleartext, meant for trusted
-  local networks rather than the open internet.
