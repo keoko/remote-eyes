@@ -5,68 +5,180 @@
     <title>Help - Remote Screen</title>
 
     <style>
+        :root {
+            --gray: #6b7280;
+            --blue: #2563eb;
+            --green: #16a34a;
+            --red: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: sans-serif;
-            max-width: 900px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            max-width: 640px;
             margin: 40px auto;
             padding: 20px;
         }
 
-        input {
-            font-size: 24px;
-            width: 180px;
-            padding: 8px;
+        .card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
         }
 
-        button {
+        h1 {
             font-size: 20px;
+            margin: 0 0 20px;
+        }
+
+        .join-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        input#code {
+            font-size: 24px;
+            letter-spacing: 4px;
+            width: 160px;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        button#join {
+            font-size: 16px;
+            font-weight: 600;
             padding: 10px 20px;
-            margin-left: 10px;
+            border: none;
+            border-radius: 8px;
+            background: var(--blue);
+            color: white;
+            cursor: pointer;
+        }
+
+        button#join:hover {
+            opacity: 0.9;
         }
 
         #status {
-            margin: 20px 0;
-            font-size: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: var(--gray);
+            margin-bottom: 16px;
+        }
+
+        #status::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+        #status[data-state="connecting"] {
+            color: var(--blue);
+            background: #eff6ff;
+        }
+
+        #status[data-state="connected"] {
+            color: var(--green);
+            background: #f0fdf4;
+        }
+
+        #status[data-state="error"] {
+            color: var(--red);
+            background: #fef2f2;
+        }
+
+        .video-wrap {
+            position: relative;
+            background: #111;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         video {
             width: 100%;
-            background: #111;
-            border-radius: 8px;
+            display: block;
+        }
+
+        #videoPlaceholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
         }
     </style>
 </head>
 
 <body>
 
-<h1>Help session</h1>
+<div class="card">
+    <h1>Help session</h1>
 
-<div>
-    <input id="code" placeholder="482731" maxlength="6">
-    <button id="join">Join</button>
+    <div class="join-row">
+        <input id="code" placeholder="482731" maxlength="6" inputmode="numeric" autofocus>
+        <button id="join">Join</button>
+    </div>
+
+    <div id="status" data-state="idle">Enter the help code.</div>
+
+    <div class="video-wrap">
+        <video id="screen" autoplay playsinline></video>
+        <div id="videoPlaceholder">Waiting for the phone's screen…</div>
+    </div>
 </div>
-
-<div id="status">Enter the help code.</div>
-
-<video id="screen" autoplay playsinline></video>
 
 <script>
 const codeInput = document.getElementById("code");
 const joinButton = document.getElementById("join");
 const status = document.getElementById("status");
 const video = document.getElementById("screen");
+const videoPlaceholder = document.getElementById("videoPlaceholder");
 
 let socket;
 let peerConnection;
 
-function log(message) {
+function setState(state, message) {
     console.log(message);
+    status.dataset.state = state;
     status.textContent = message;
 }
 
 function send(message) {
     socket.send(JSON.stringify(message));
 }
+
+codeInput.focus();
+
+codeInput.addEventListener("input", () => {
+    codeInput.value = codeInput.value.replace(/\D/g, "").slice(0, 6);
+});
+
+codeInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+        joinButton.click();
+    }
+});
 
 /*
  * IMPORTANT:
@@ -117,11 +229,18 @@ async function createPeerConnection() {
 
         if (event.streams && event.streams[0]) {
             video.srcObject = event.streams[0];
+            videoPlaceholder.style.display = "none";
         }
     };
 
     peerConnection.onconnectionstatechange = () => {
-        log("WebRTC: " + peerConnection.connectionState);
+        const connectionState = peerConnection.connectionState;
+        const badgeState =
+            connectionState === "connected" ? "connected"
+                : (connectionState === "failed" || connectionState === "disconnected" || connectionState === "closed") ? "error"
+                : "connecting";
+
+        setState(badgeState, "WebRTC: " + connectionState);
     };
 
     peerConnection.oniceconnectionstatechange = () => {
@@ -140,7 +259,7 @@ async function handleOffer(sdp) {
 
     sendAnswer(answer.sdp);
 
-    log("Answer sent. Connecting...");
+    setState("connecting", "Answer sent. Connecting…");
 }
 
 async function handleIceCandidate(json) {
@@ -159,11 +278,11 @@ joinButton.onclick = () => {
     const code = codeInput.value.replace(/\s/g, "");
 
     if (code.length !== 6) {
-        log("Enter the six-digit code.");
+        setState("idle", "Enter the six-digit code.");
         return;
     }
 
-    log("Connecting...");
+    setState("connecting", "Connecting…");
 
     iceServersPromise = fetch("/ice-config?code=" + code)
         .then(r => r.json())
@@ -177,7 +296,7 @@ joinButton.onclick = () => {
     );
 
     socket.onopen = () => {
-        log("Joining help session...");
+        setState("connecting", "Joining help session…");
 
         send({
             type: "join",
@@ -191,7 +310,7 @@ joinButton.onclick = () => {
         console.log("Signal:", message);
 
         if (message.type === "joined") {
-            log("Joined. Waiting for screen...");
+            setState("connecting", "Joined. Waiting for screen…");
             await createPeerConnection();
             return;
         }
@@ -211,21 +330,21 @@ joinButton.onclick = () => {
         }
 
         if (message.type === "peer-disconnected") {
-            log("Phone disconnected.");
+            setState("error", "Phone disconnected.");
         }
 
         if (message.type === "expired") {
-            log("Help session expired.");
+            setState("error", "Help session expired.");
         }
 
         if (message.type === "error") {
-            log("Error: " + message.message);
+            setState("error", "Error: " + message.message);
         }
     };
 
     socket.onerror = error => {
         console.error(error);
-        log("WebSocket error.");
+        setState("error", "WebSocket error.");
     };
 
     socket.onclose = () => {

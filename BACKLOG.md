@@ -57,10 +57,16 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   stranger, not a sophisticated attack), not gold-plated. Verified both
   locally and against the live production server: attempts 1-10 get the
   normal "Invalid or expired help code," 11+ get rate-limited.
-- [ ] Improve `helper.html`'s UI/UX — it's currently a bare-bones page
-  (plain input + button + status line). Used by whoever is helping (not the
-  parents), so lower priority than the Android redesign, but clearer
-  connection-state feedback and layout polish would help.
+- [x] Improve `helper.html`'s UI/UX — card layout, a colored connection-
+  state badge (gray/blue/green/red for idle/connecting/connected/error)
+  instead of a plain overwritten text line, a placeholder overlay on the
+  video area until a track actually arrives, Enter-to-join, autofocus, and
+  live digit-only sanitization on the code input. Purely visual/JS — no
+  changes to the signaling protocol or `server.js`. Verified: JS syntax
+  checked, page serves correctly with all new elements in both local and
+  production, protocol logic unchanged. **Not visually verified** — no
+  browser automation available in this environment; needs your eyes on
+  the actual rendered page.
 
 ## Cross-cutting
 
