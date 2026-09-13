@@ -52,12 +52,12 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   shipped to either client since an APK is trivially reverse-engineered).
   `server.js` caches a 24h credential and exposes it at `/ice-config`;
   both `helper.html` and `ScreenCaptureService.kt` fetch from there instead
-  of hardcoding STUN-only. Fly app switched to always-on
-  (`min_machines_running = 1`, right-sized to 256MB) since a freshly
-  minted credential can take up to ~2 minutes to propagate, which would
-  otherwise bite on every cold start given this app's sporadic usage
-  pattern. **Confirmed working on a real device**: phone on cellular data,
-  Wi-Fi off, video now appears in the helper's browser.
+  of hardcoding STUN-only. Fly app is right-sized to 256MB and scales to
+  zero when idle — a freshly minted credential can take up to ~2 minutes
+  to propagate, so a cold start could occasionally cause a failed first
+  connection attempt (accepted trade-off for cost; see AGENTS.md's
+  Deployment section). **Confirmed working on a real device**: phone on
+  cellular data, Wi-Fi off, video now appears in the helper's browser.
 - [x] Gate `/ice-config` behind an active session code — it was fully
   public and unauthenticated, so anyone (this repo is public on GitHub)
   could fetch a working Metered TURN credential and burn the 20GB/month
