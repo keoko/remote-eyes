@@ -1,8 +1,10 @@
 # Remote Eyes
 
-Remote screen sharing for quick, ad-hoc help sessions: an Android app shares
-the phone's screen over WebRTC, and anyone with the 6-digit help code can
-watch it from a browser — no accounts, no install on the viewer's side.
+Remote screen sharing for quick, ad-hoc help sessions — built to help
+elderly, non-technical family members fix phone problems remotely. An
+Android app shares the phone's screen over WebRTC, and whoever is helping
+can watch it from a browser using a 6-digit code — no accounts, nothing to
+install on the helper's side, as little friction as possible on the phone.
 
 ## How it works
 
