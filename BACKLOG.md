@@ -5,7 +5,7 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
 
 ## Android (`android/`)
 
-- [ ] Wire up `WebRtcRuntime.kt` (or delete it) — `ScreenCaptureService`
+- [x] Wire up `WebRtcRuntime.kt` (or delete it) — `ScreenCaptureService`
   currently duplicates its WebRTC init logic inline instead of using it.
 - [ ] Request `POST_NOTIFICATIONS` permission at runtime on Android 13+, so
   the "Stop sharing" foreground notification actually shows up.

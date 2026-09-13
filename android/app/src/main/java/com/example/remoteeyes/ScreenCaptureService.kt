@@ -18,8 +18,6 @@ import android.util.Log
 
 import org.json.JSONObject
 import org.webrtc.DataChannel
-import org.webrtc.DefaultVideoDecoderFactory
-import org.webrtc.DefaultVideoEncoderFactory
 import org.webrtc.EglBase
 import org.webrtc.IceCandidate
 import org.webrtc.MediaConstraints
@@ -372,53 +370,23 @@ private fun initializeWebRtc() {
     )
 
     /*
-     * EGL context.
+     * Shared, process-lifetime EGL context and
+     * PeerConnectionFactory, owned by WebRtcRuntime.
+     *
+     * WebRtcRuntime.initialize() runs the WebRTC native
+     * library's global PeerConnectionFactory.initialize()
+     * exactly once per process (guarded internally). Building a
+     * fresh EglBase/PeerConnectionFactory here on every session
+     * start would re-run that global init a second time if this
+     * service is stopped and restarted within the same process,
+     * which is unsafe. eglBase/peerConnectionFactory below are
+     * therefore borrowed references, not owned by this service.
      */
     eglBase =
-        EglBase.create()
+        WebRtcRuntime.eglBase(applicationContext)
 
-    /*
-     * Initialize WebRTC native library.
-     */
-    PeerConnectionFactory.initialize(
-        PeerConnectionFactory
-            .InitializationOptions
-            .builder(applicationContext)
-            .setEnableInternalTracer(false)
-            .createInitializationOptions()
-    )
-
-    /*
-     * Encoder.
-     */
-    val encoderFactory =
-        DefaultVideoEncoderFactory(
-            eglBase!!.eglBaseContext,
-            true,
-            true
-        )
-
-    /*
-     * Decoder.
-     */
-    val decoderFactory =
-        DefaultVideoDecoderFactory(
-            eglBase!!.eglBaseContext
-        )
-
-    /*
-     * PeerConnectionFactory.
-     */
     peerConnectionFactory =
-        PeerConnectionFactory
-            .builder()
-            .setVideoEncoderFactory(
-                encoderFactory
-            )
-            .setVideoDecoderFactory(
-                decoderFactory
-            )
-            .createPeerConnectionFactory()
+        WebRtcRuntime.factory(applicationContext)
 
     Log.d(
         TAG,
@@ -1293,20 +1261,16 @@ private fun stopScreenCapture() {
      * ----------------------------------------------------------
      * PeerConnectionFactory
      * ----------------------------------------------------------
+     *
+     * peerConnectionFactory is the process-lifetime singleton
+     * owned by WebRtcRuntime, not a per-session object created
+     * by this service. Do NOT dispose it here: WebRtcRuntime has
+     * no way to know its cached factory was torn down, so its
+     * "initialized" flag would stay true while the underlying
+     * native object is gone, permanently breaking every future
+     * screen-share session in this process. Just drop this
+     * service's local reference to it.
      */
-
-    try {
-
-        peerConnectionFactory?.dispose()
-
-    } catch (e: Exception) {
-
-        Log.e(
-            TAG,
-            "Error disposing PeerConnectionFactory",
-            e
-        )
-    }
 
     peerConnectionFactory = null
 
@@ -1340,20 +1304,11 @@ private fun stopScreenCapture() {
      * ----------------------------------------------------------
      * EGL
      * ----------------------------------------------------------
+     *
+     * eglBase is likewise the process-lifetime singleton owned
+     * by WebRtcRuntime. Do NOT release it here, for the same
+     * reason as peerConnectionFactory above.
      */
-
-    try {
-
-        eglBase?.release()
-
-    } catch (e: Exception) {
-
-        Log.e(
-            TAG,
-            "Error releasing EGL",
-            e
-        )
-    }
 
     eglBase = null
 
