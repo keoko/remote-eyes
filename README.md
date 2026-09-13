@@ -58,11 +58,31 @@ actual use (`server/test/helper-ice-race.test.js`).
    or `ws://10.0.2.2:8080` for an emulator talking to a local server, or
    your machine's LAN IP for a real device on a local server. No source
    edit needed — this is read into a `BuildConfig` field at build time.
-2. Build and install with `./gradlew assembleDebug`, or open `android/` in
-   Android Studio.
-3. Tap "Share my screen", grant the screen-capture permission (and the
-   notification permission, on Android 13+), and the app will display a
-   large, easy-to-read help code once connected to the signaling server.
+2. **On the phone**, enable Developer Options (Settings → About phone →
+   tap "Build number" 7 times) and turn on USB debugging inside it, then
+   connect the phone via USB. Accept the "Allow USB debugging?" prompt
+   that appears on the phone (tick "always allow from this computer" to
+   skip it next time).
+3. **On this machine**, confirm the phone is detected: `adb devices` (from
+   anywhere) should list it. If it doesn't, check the cable supports data
+   (not charge-only) and that you accepted the prompt in step 2.
+4. Build **and install** in one step, from `android/`:
+   ```
+   ./gradlew installDebug
+   ```
+   (`assembleDebug` alone only builds the APK to
+   `app/build/outputs/apk/debug/app-debug.apk` — it does not put it on the
+   phone. `installDebug` does both. Alternatively, open `android/` in
+   Android Studio and hit Run.)
+5. Open the app on the phone (it won't launch automatically after
+   `installDebug` — find "Remote Eyes" in the app drawer). Tap "Share my
+   screen", grant the screen-capture permission (and the notification
+   permission, on Android 13+), and the app will display a large,
+   easy-to-read help code once connected to the signaling server.
+
+Repeat steps 3-5 (skip 2, already done) whenever you rebuild after a code
+change — `installDebug` replaces the existing install without needing to
+uninstall first.
 
 The app is localized in English, Catalan, and Spanish (`res/values-ca`,
 `res/values-es`), and its UI is deliberately dead-simple — one toggle
