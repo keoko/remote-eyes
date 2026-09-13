@@ -27,6 +27,7 @@ class MainActivity : Activity(), ScreenCaptureService.UiListener {
     }
 
     private lateinit var status: TextView
+    private lateinit var codeLabel: TextView
     private lateinit var codeText: TextView
     private lateinit var actionButton: Button
 
@@ -40,6 +41,13 @@ class MainActivity : Activity(), ScreenCaptureService.UiListener {
         status = TextView(this).apply {
             textSize = 24f
             gravity = Gravity.CENTER
+        }
+
+        codeLabel = TextView(this).apply {
+            text = getString(R.string.code_label)
+            textSize = 20f
+            gravity = Gravity.CENTER
+            visibility = android.view.View.GONE
         }
 
         codeText = TextView(this).apply {
@@ -72,6 +80,14 @@ class MainActivity : Activity(), ScreenCaptureService.UiListener {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply { bottomMargin = dpToPx(24) }
+            )
+
+            addView(
+                codeLabel,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
             )
 
             addView(
@@ -125,6 +141,7 @@ class MainActivity : Activity(), ScreenCaptureService.UiListener {
         actionButton.setTextColor(Color.WHITE)
 
         if (!sharing) {
+            codeLabel.visibility = android.view.View.GONE
             codeText.visibility = android.view.View.GONE
             codeText.text = ""
         }
@@ -268,6 +285,7 @@ class MainActivity : Activity(), ScreenCaptureService.UiListener {
     override fun onHelpCode(code: String) {
         runOnUiThread {
             codeText.text = code.chunked(2).joinToString(" ")
+            codeLabel.visibility = android.view.View.VISIBLE
             codeText.visibility = android.view.View.VISIBLE
             status.text = getString(R.string.waiting_for_helper)
         }

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Remote Eyes</string>
+
+    <string name="ready_status">A punt per ajudar</string>
+    <string name="share_button">Comparteix la pantalla</string>
+    <string name="stop_button">Deixa de compartir</string>
+
+    <string name="requesting_permission">Un moment…</string>
+    <string name="starting_status">Iniciant…</string>
+    <string name="share_cancelled">Cancel·lat</string>
+
+    <string name="code_label">El teu codi</string>
+    <string name="waiting_for_helper">Esperant que algú es connecti…</string>
+    <string name="helper_connected_status">Connectat! Ara s\'està compartint la pantalla.</string>
+
+    <string name="stopping_status">Aturant…</string>
+    <string name="stopped_status">S\'ha aturat la compartició.</string>
+    <string name="helper_disconnected_status">Desconnectat.</string>
+    <string name="session_expired_status">El codi ha caducat. Prem «Comparteix la pantalla» per obtenir-ne un de nou.</string>
+    <string name="generic_error_status">Alguna cosa ha anat malament. Torna-ho a provar.</string>
+    <string name="connection_failed_status">Problema de connexió. Torna-ho a provar.</string>
+
+    <string name="notification_title">Compartició de pantalla</string>
+    <string name="notification_text">S\'està compartint la teva pantalla</string>
+    <string name="notification_stop_action">Deixa de compartir</string>
+</resources>
