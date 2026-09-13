@@ -1,3 +1,8 @@
+## Backlog
+
+Known, not-yet-scheduled work items live in `BACKLOG.md`. Check it for
+candidate tasks before assuming something needs inventing from scratch.
+
 ## Commands
 
 ### Android app (`android/`)
