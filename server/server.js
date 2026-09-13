@@ -128,9 +128,9 @@ function removeClient(ws) {
 }
 
 const server = http.createServer((req, res) => {
-    if (req.url === "/helper") {
+    if (req.url === "/viewer") {
         const file = fs.readFileSync(
-            path.join(__dirname, "helper.html")
+            path.join(__dirname, "viewer.html")
         );
 
         res.writeHead(200, {
