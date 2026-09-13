@@ -172,8 +172,12 @@ function removeClient(ws) {
 }
 
 const server = http.createServer((req, res) => {
-    if (req.url === "/ice-config") {
-        getTurnIceServers().then((turnServers) => {
+    if (req.url.split("?")[0] === "/ice-config") {
+        const query = new URLSearchParams(req.url.split("?")[1] || "");
+        const code = query.get("code");
+        const hasActiveSession = code != null && sessions.has(code);
+
+        const respond = (turnServers) => {
             const iceServers = [
                 { urls: "stun:stun.l.google.com:19302" },
                 ...turnServers
@@ -181,7 +185,14 @@ const server = http.createServer((req, res) => {
 
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ iceServers }));
-        });
+        };
+
+        if (!hasActiveSession) {
+            respond([]);
+            return;
+        }
+
+        getTurnIceServers().then(respond);
         return;
     }
 

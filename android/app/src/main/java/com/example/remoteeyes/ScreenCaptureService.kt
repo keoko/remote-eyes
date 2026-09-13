@@ -117,6 +117,8 @@ private var started = false
  */
 private var stopping = false
 
+private var currentHelpCode: String? = null
+
 // ==============================================================
 // Service lifecycle
 // ==============================================================
@@ -561,6 +563,8 @@ override fun onHelpCode(
         "Help code: $code"
     )
 
+    currentHelpCode = code
+
     mainHandler.post {
 
         uiListener?.onHelpCode(code)
@@ -751,7 +755,7 @@ private fun fetchIceServersAndOffer() {
         BuildConfig.SIGNALING_URL
             .replaceFirst("wss://", "https://")
             .replaceFirst("ws://", "http://") +
-            "/ice-config"
+            "/ice-config?code=" + currentHelpCode
 
     val client = OkHttpClient()
 

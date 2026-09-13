@@ -99,10 +99,7 @@ function sendIceCandidate(candidate) {
     });
 }
 
-const iceServersPromise = fetch("/ice-config")
-    .then(r => r.json())
-    .then(config => config.iceServers)
-    .catch(() => [{ urls: "stun:stun.l.google.com:19302" }]);
+let iceServersPromise;
 
 async function createPeerConnection() {
     const iceServers = await iceServersPromise;
@@ -167,6 +164,11 @@ joinButton.onclick = () => {
     }
 
     log("Connecting...");
+
+    iceServersPromise = fetch("/ice-config?code=" + code)
+        .then(r => r.json())
+        .then(config => config.iceServers)
+        .catch(() => [{ urls: "stun:stun.l.google.com:19302" }]);
 
     const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
 

@@ -58,6 +58,13 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   otherwise bite on every cold start given this app's sporadic usage
   pattern. **Confirmed working on a real device**: phone on cellular data,
   Wi-Fi off, video now appears in the helper's browser.
+- [x] Gate `/ice-config` behind an active session code — it was fully
+  public and unauthenticated, so anyone (this repo is public on GitHub)
+  could fetch a working Metered TURN credential and burn the 20GB/month
+  quota with unrelated traffic. Now requires a `?code=` matching a
+  currently-active session in `sessions`; an invalid/missing code gets
+  STUN-only back instead of an error, matching the existing fetch-failure
+  fallback shape in both clients.
 - [ ] Add automated tests — neither sub-project has any today. `server/`'s
   `npm test` is just a placeholder that errors; `android/`'s
   `testDebugUnitTest` Gradle task exists but has no test sources. Best
