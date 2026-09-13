@@ -28,9 +28,9 @@ install on the helper's side, as little friction as possible on the phone.
 ## Running the server
 
 **Production** is deployed to Fly.io at `wss://remote-eyes-server.fly.dev`
-(and `https://remote-eyes-server.fly.dev/helper` for the browser page),
-always-on (`min_machines_running = 1` — a single machine, since sessions
-live in an in-memory `Map` not shared across machines). Deploy changes with
+(and `https://remote-eyes-server.fly.dev/helper` for the browser page), a
+single machine (never more, since sessions live in an in-memory `Map` not
+shared across machines) that scales to zero when idle. Deploy changes with
 `flyctl deploy` from `server/`. TURN credentials (Metered.ca) are supplied
 via `flyctl secrets set METERED_DOMAIN=... METERED_SECRET_KEY=...` — never
 committed to the repo.

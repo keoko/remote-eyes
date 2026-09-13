@@ -97,13 +97,23 @@ protocol.
 ## Deployment
 
 The Fly.io app (`remote-eyes-server`, Paris/`cdg`) runs **exactly one
-always-on machine** (`min_machines_running = 1` in `server/fly.toml`,
-right-sized to 256MB) — two deliberate constraints, not defaults left in
-place:
+machine** (`server/fly.toml`, right-sized to 256MB) — never more, and never
+autoscaled to multiple machines:
 - More than one machine would split the in-memory `sessions` map across
   machines, causing intermittent "Invalid or expired help code" errors
   depending on which machine a request landed on.
-- Scale-to-zero was tried and reverted: Metered's expiring credentials can
-  take up to ~2 minutes to propagate, and this app's usage is sporadic
-  enough that a cold start would risk minting a fresh, not-yet-usable
-  credential right when a real session needs it.
+
+`min_machines_running = 0` — scale-to-zero, a deliberate cost/reliability
+trade-off, not a default left in place. It was briefly set to `1`
+(always-on, ~$2/month) specifically because Metered's expiring TURN
+credentials can take up to ~2 minutes to propagate, and the in-memory
+`turnCache` in `server.js` is wiped on every cold start — with this app's
+sporadic usage, that meant nearly every real session risked a cold start
+minting a fresh, not-yet-usable credential right when it's needed.
+Reverted back to `0` (cents/month instead of ~$2/month) with that risk
+knowingly accepted: worst case, the first connection attempt of a session
+fails and a retry a minute or two later succeeds. If this trade-off ever
+stops feeling worth it, the fix is to persist the cached credential to a
+Fly volume so a cold-started machine reads the still-valid cached one
+instead of re-minting — not to just flip `min_machines_running` back to
+`1` without addressing why it was needed.
