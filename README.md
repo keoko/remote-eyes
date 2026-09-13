@@ -48,6 +48,8 @@ simply omitted and ICE falls back to STUN-only.
 
 `server/cli-test-client.js` is a small terminal script for manually testing
 the join flow against a running server, independent of the browser page.
+`npm test` runs a regression test for a real race-condition bug found by
+actual use (`server/test/helper-ice-race.test.js`).
 
 ## Running the Android app
 
@@ -58,10 +60,18 @@ the join flow against a running server, independent of the browser page.
    edit needed — this is read into a `BuildConfig` field at build time.
 2. Build and install with `./gradlew assembleDebug`, or open `android/` in
    Android Studio.
-3. Tap "Share screen", grant the screen-capture permission, and the app will
-   display a help code once connected to the signaling server.
+3. Tap "Share my screen", grant the screen-capture permission (and the
+   notification permission, on Android 13+), and the app will display a
+   large, easy-to-read help code once connected to the signaling server.
+
+The app is localized in English, Catalan, and Spanish (`res/values-ca`,
+`res/values-es`), and its UI is deliberately dead-simple — one toggle
+button and a big code display — since the actual users are the
+maintainer's elderly, non-technical parents, not a general audience.
 
 ## Known limitations
 
-- The 6-digit join code has no rate limiting on the server, so it's not
-  resistant to brute-forcing within its 5-minute lifetime.
+- The 6-digit join code is rate-limited per IP (10 attempts per 5-minute
+  window) but not hardened against a distributed attacker with many IPs —
+  proportionate to the actual threat model (a casual stranger guessing
+  codes), not a sophisticated attack.
