@@ -7,8 +7,11 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
 
 - [x] Wire up `WebRtcRuntime.kt` (or delete it) — `ScreenCaptureService`
   currently duplicates its WebRTC init logic inline instead of using it.
-- [ ] Request `POST_NOTIFICATIONS` permission at runtime on Android 13+, so
-  the "Stop sharing" foreground notification actually shows up.
+- [x] Request `POST_NOTIFICATIONS` permission at runtime on Android 13+, so
+  the "Stop sharing" foreground notification actually shows up. Requested
+  in context, when "Share screen" is tapped (before the `MediaProjection`
+  request), not on app launch. Denial doesn't block sharing itself — only
+  the visible notification.
 - [x] Make `SIGNALING_URL` configurable instead of hardcoded in
   `ScreenCaptureService.kt` — currently needs a source edit per network
   (emulator vs. LAN IP vs. parent's real network).

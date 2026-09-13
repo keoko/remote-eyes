@@ -1,7 +1,9 @@
 package com.example.remoteeyes
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +17,7 @@ class MainActivity : Activity(), ScreenCaptureService.UiListener {
     companion object {
         private const val TAG = "HELP_WEBRTC"
         private const val SCREEN_CAPTURE_REQUEST = 100
+        private const val NOTIFICATION_PERMISSION_REQUEST = 101
     }
 
     private lateinit var status: TextView
@@ -97,6 +100,47 @@ class MainActivity : Activity(), ScreenCaptureService.UiListener {
     }
 
     private fun requestScreenCapture() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.d(TAG, "Requesting POST_NOTIFICATIONS permission")
+
+            requestPermissions(
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                NOTIFICATION_PERMISSION_REQUEST
+            )
+            return
+        }
+
+        startMediaProjectionRequest()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(
+            requestCode,
+            permissions,
+            grantResults
+        )
+
+        if (requestCode != NOTIFICATION_PERMISSION_REQUEST) {
+            return
+        }
+
+        Log.d(
+            TAG,
+            "POST_NOTIFICATIONS result: granted=" +
+                "${grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED}"
+        )
+
+        startMediaProjectionRequest()
+    }
+
+    private fun startMediaProjectionRequest() {
         Log.d(TAG, "Requesting MediaProjection permission")
 
         shareButton.isEnabled = false
