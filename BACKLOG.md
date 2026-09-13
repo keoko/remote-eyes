@@ -67,6 +67,24 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   production, protocol logic unchanged. **Not visually verified** — no
   browser automation available in this environment; needs your eyes on
   the actual rendered page.
+- [x] Fix a real race condition in `helper.html` found via actual user
+  testing (not caught by any prior verification): `createPeerConnection()`
+  became `async` (awaiting the `/ice-config` fetch) when TURN support was
+  added, but each WebSocket message is a separate `onmessage` invocation —
+  awaiting inside one doesn't block the next. If the phone's SDP offer
+  arrived before the browser's own `/ice-config` fetch resolved,
+  `handleOffer` ran against a still-`undefined` `peerConnection`, crashing
+  with `TypeError: can't access property "setRemoteDescription",
+  peerConnection is undefined`, followed by cascading `ICE candidate
+  error: No remoteDescription` for every candidate after it. Fixed by
+  awaiting a shared `peerConnectionReady` promise before processing any
+  `signal` message, regardless of arrival order. Added
+  `server/test/helper-ice-race.test.js` as a real regression test — it
+  extracts the actual `<script>` from `helper.html` (not a hand-copied
+  duplicate) and runs it in a sandboxed context with a deliberately
+  delayed fake fetch to reproduce the exact race; confirmed it fails
+  against the pre-fix code and passes against the fix. `npm test` now
+  runs it (was previously a placeholder that always failed).
 
 ## Cross-cutting
 
@@ -88,10 +106,11 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   currently-active session in `sessions`; an invalid/missing code gets
   STUN-only back instead of an error, matching the existing fetch-failure
   fallback shape in both clients.
-- [ ] Add automated tests — neither sub-project has any today. `server/`'s
-  `npm test` is just a placeholder that errors; `android/`'s
-  `testDebugUnitTest` Gradle task exists but has no test sources. Best
-  starting point is probably `server/server.js`'s session/signaling logic
-  (`createSession`, `joinSession`, `relaySignal`, `removeClient`) — it's
-  plain functions operating on the `sessions` map, testable without a real
-  WebSocket server.
+- [ ] Add automated tests — `server/` now has one real test
+  (`test/helper-ice-race.test.js`, run via `npm test`), added as a
+  regression test while fixing a real bug, not as a deliberate coverage
+  push. `server.js`'s session/signaling logic (`createSession`,
+  `joinSession`, `relaySignal`, `removeClient`) is still untested — plain
+  functions operating on the `sessions` map, testable without a real
+  WebSocket server. `android/`'s `testDebugUnitTest` Gradle task still has
+  no test sources at all.

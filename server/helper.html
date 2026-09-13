@@ -157,6 +157,7 @@ const videoPlaceholder = document.getElementById("videoPlaceholder");
 
 let socket;
 let peerConnection;
+let peerConnectionReady;
 
 function setState(state, message) {
     console.log(message);
@@ -311,11 +312,23 @@ joinButton.onclick = () => {
 
         if (message.type === "joined") {
             setState("connecting", "Joined. Waiting for screen…");
-            await createPeerConnection();
+            peerConnectionReady = createPeerConnection();
+            await peerConnectionReady;
             return;
         }
 
         if (message.type === "signal") {
+            // The phone can send its offer/ICE candidates before this
+            // browser's own createPeerConnection() (which awaits the
+            // /ice-config fetch) has finished - each WebSocket message
+            // is a separate onmessage invocation, so awaiting inside one
+            // does not block the next from running. Wait for the same
+            // in-flight promise here so peerConnection is guaranteed to
+            // exist before use, regardless of arrival order/timing.
+            if (peerConnectionReady) {
+                await peerConnectionReady;
+            }
+
             if (message.signalType === "offer") {
                 await handleOffer(message.sdp);
             }

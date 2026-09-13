@@ -23,8 +23,10 @@ candidate tasks before assuming something needs inventing from scratch.
 - Run the signaling server locally: `node server.js` (listens on port 8080,
   hardcoded in `server.js`)
 - Manually test the join flow from a terminal: `node cli-test-client.js`
-- No lint or real test script is configured yet (`npm test` is a placeholder
-  that just exits with an error).
+- `npm test` runs `test/helper-ice-race.test.js` — a regression test for a
+  real race condition (extracts `helper.html`'s actual `<script>` and runs
+  it in a sandboxed context with mocked browser APIs). No lint configured;
+  no coverage of `server.js`'s own session/signaling logic yet.
 - **Production deploy**: `flyctl deploy` from `server/` (app:
   `remote-eyes-server`, config in `server/fly.toml` + `server/Dockerfile`).
   Always-on (`min_machines_running = 1`) — see Architecture below for why.
