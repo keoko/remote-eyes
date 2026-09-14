@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "node test/helper-ice-race.test.js"
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",

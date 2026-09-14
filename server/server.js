@@ -303,29 +303,43 @@ wss.on("connection", (ws, req) => {
     });
 });
 
-setInterval(() => {
-    const now = Date.now();
+if (require.main === module) {
+    setInterval(() => {
+        const now = Date.now();
 
-    for (const [code, session] of sessions) {
-        if (session.expires <= now) {
-            send(session.phone, {
-                type: "expired"
-            });
+        for (const [code, session] of sessions) {
+            if (session.expires <= now) {
+                send(session.phone, {
+                    type: "expired"
+                });
 
-            send(session.helper, {
-                type: "expired"
-            });
+                send(session.helper, {
+                    type: "expired"
+                });
 
-            session.phone?.close();
-            session.helper?.close();
+                session.phone?.close();
+                session.helper?.close();
 
-            sessions.delete(code);
+                sessions.delete(code);
 
-            console.log(`Session expired: ${code}`);
+                console.log(`Session expired: ${code}`);
+            }
         }
-    }
-}, 30_000);
+    }, 30_000);
 
-server.listen(PORT, () => {
-    console.log(`Signaling server listening on port ${PORT}`);
-});
+    server.listen(PORT, () => {
+        console.log(`Signaling server listening on port ${PORT}`);
+    });
+}
+
+module.exports = {
+    sessions,
+    joinAttempts,
+    createAttempts,
+    generateCode,
+    createSession,
+    joinSession,
+    relaySignal,
+    removeClient,
+    isRateLimited
+};

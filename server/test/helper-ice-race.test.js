@@ -13,6 +13,8 @@
  * first - reproducing the exact race.
  */
 
+const test = require("node:test");
+const assert = require("node:assert/strict");
 const vm = require("vm");
 const fs = require("fs");
 const path = require("path");
@@ -20,10 +22,7 @@ const path = require("path");
 const html = fs.readFileSync(path.join(__dirname, "..", "helper.html"), "utf8");
 const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
 
-if (!scriptMatch) {
-    console.log("FAIL - could not find a <script> block in helper.html");
-    process.exit(1);
-}
+assert.ok(scriptMatch, "could not find a <script> block in helper.html");
 
 const script = scriptMatch[1];
 
@@ -129,18 +128,13 @@ process.on("unhandledRejection", reason => {
 
 vm.runInContext(script, sandbox);
 
-async function run() {
+test("offer/ICE candidates arriving before the /ice-config fetch resolves no longer crash", async () => {
     elements.code.value = "482731";
     elements.join.click();
     wsInstance.onopen();
 
-    if (JSON.stringify(sentMessages[0]) !== JSON.stringify({ type: "join", code: "482731" })) {
-        throw new Error("Did not send expected join message: " + JSON.stringify(sentMessages));
-    }
-
-    if (fetchCalls !== 1) {
-        throw new Error("Expected exactly 1 fetch call at this point, got " + fetchCalls);
-    }
+    assert.deepEqual(sentMessages[0], { type: "join", code: "482731" });
+    assert.equal(fetchCalls, 1);
 
     // Fire "joined" immediately followed by the offer, same tick - no
     // await in between, matching how two separate WebSocket message
@@ -153,17 +147,9 @@ async function run() {
     await Promise.all([joinedPromise, offerPromise]);
     await new Promise(r => setTimeout(r, 100));
 
-    if (errors.length > 0) {
-        throw new Error("Errors occurred: " + JSON.stringify(errors));
-    }
-
-    if (peerConnectionInstances.length !== 1) {
-        throw new Error("Expected exactly 1 RTCPeerConnection, got " + peerConnectionInstances.length);
-    }
-
-    if (!setRemoteDescriptionCalled) {
-        throw new Error("setRemoteDescription was never called - handleOffer did not run against a real peerConnection");
-    }
+    assert.deepEqual(errors, []);
+    assert.equal(peerConnectionInstances.length, 1);
+    assert.ok(setRemoteDescriptionCalled, "handleOffer did not run against a real peerConnection");
 
     let addIceCandidateCalls = 0;
     peerConnectionInstances[0].addIceCandidate = () => { addIceCandidateCalls++; return Promise.resolve(); };
@@ -178,14 +164,5 @@ async function run() {
         })
     });
 
-    if (addIceCandidateCalls !== 1) {
-        throw new Error("addIceCandidate was not called for the ICE candidate message");
-    }
-
-    console.log("PASS - offer/ICE candidates arriving before the /ice-config fetch resolves no longer crash");
-}
-
-run().catch(err => {
-    console.log("FAIL -", err.message);
-    process.exit(1);
+    assert.equal(addIceCandidateCalls, 1);
 });

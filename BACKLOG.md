@@ -5,6 +5,14 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
 
 ## Android (`android/`)
 
+- [ ] Add automated tests — `testDebugUnitTest` has no test sources at
+  all. Deferred out of the server-side testing cycle since
+  `ScreenCaptureService`/`MainActivity`/`SignalingClient`/`WebRtcRuntime`
+  are all heavily tied to Android framework classes (`Service`,
+  `Activity`, `MediaProjection`) and the WebRTC native library — needs
+  Robolectric or instrumented tests, not plain unit tests, and there's no
+  emulator/device attached in the dev environment to run instrumented
+  tests against. A separate, larger effort than `server/`'s was.
 - [x] Wire up `WebRtcRuntime.kt` (or delete it) — `ScreenCaptureService`
   currently duplicates its WebRTC init logic inline instead of using it.
 - [x] Request `POST_NOTIFICATIONS` permission at runtime on Android 13+, so
@@ -143,11 +151,31 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   → `BuildConfig.APP_TOKEN` confirmed correct in a real built APK, and
   **confirmed end-to-end on-device**: rebuilt, reinstalled, real session
   created and joined normally with the token wired through.
-- [ ] Add automated tests — `server/` now has one real test
-  (`test/helper-ice-race.test.js`, run via `npm test`), added as a
-  regression test while fixing a real bug, not as a deliberate coverage
-  push. `server.js`'s session/signaling logic (`createSession`,
-  `joinSession`, `relaySignal`, `removeClient`) is still untested — plain
-  functions operating on the `sessions` map, testable without a real
-  WebSocket server. `android/`'s `testDebugUnitTest` Gradle task still has
-  no test sources at all.
+- [x] Add automated tests for `server.js`'s session/signaling logic —
+  adopted Node's built-in `node:test`/`node:assert` (zero new dependency,
+  stable in both this project's Node 20 Docker image and Node 24 locally),
+  migrating the existing ad-hoc `helper-ice-race.test.js` to the same
+  convention. Added `test/session.test.js` covering `generateCode`,
+  `createSession`, `joinSession` (valid/invalid/already-has-a-helper),
+  `relaySignal` (both directions, unknown-session no-op), `removeClient`
+  (phone vs. helper disconnecting, no-sessionCode no-op), and
+  `isRateLimited` (allows-then-blocks, resets after window). Required
+  guarding `server.js`'s `.listen()` + cleanup `setInterval` behind
+  `require.main === module` and adding `module.exports` so the functions
+  are importable without starting a real server — `node server.js` run
+  directly is unaffected. `npm test` now runs `node --test` (auto-
+  discovers both files; a bare `node --test test/` with a directory
+  argument turned out to be broken in this Node version — worth knowing
+  if this ever needs revisiting). **Proved the tests have real teeth**:
+  deliberately broke `createSession` (removed `ws.sessionCode = code`),
+  confirmed 6 of 13 tests correctly failed, then reverted and confirmed
+  all 13 pass again. Verified `server.js` still runs/listens normally
+  when executed directly, and redeployed to production with a live
+  spot-check.
+
+  `android/`'s `testDebugUnitTest` Gradle task still has no test sources
+  at all — deliberately out of scope for this cycle: `ScreenCaptureService`/
+  `MainActivity`/`SignalingClient`/`WebRtcRuntime` are all heavily tied to
+  Android framework classes and the WebRTC native library, needing
+  Robolectric or instrumented tests (no emulator/device attached in this
+  dev environment to run those against). A separate, larger effort.

@@ -23,10 +23,19 @@ candidate tasks before assuming something needs inventing from scratch.
 - Run the signaling server locally: `node server.js` (listens on port 8080,
   hardcoded in `server.js`)
 - Manually test the join flow from a terminal: `node cli-test-client.js`
-- `npm test` runs `test/helper-ice-race.test.js` — a regression test for a
-  real race condition (extracts `helper.html`'s actual `<script>` and runs
-  it in a sandboxed context with mocked browser APIs). No lint configured;
-  no coverage of `server.js`'s own session/signaling logic yet.
+- `npm test` runs `node --test`, which auto-discovers both files under
+  `test/` (Node's built-in test runner, zero added dependency — a bare
+  `node --test test/` with a directory argument is broken in the Node
+  version this project uses, so don't reintroduce that form):
+  `session.test.js` (session/signaling logic — `generateCode`,
+  `createSession`, `joinSession`, `relaySignal`, `removeClient`,
+  `isRateLimited`) and `helper-ice-race.test.js` (a regression test for a
+  real race condition — extracts `helper.html`'s actual `<script>` and
+  runs it in a sandboxed context with mocked browser APIs). No lint
+  configured. `server.js` exports its testable functions via
+  `module.exports` and guards `.listen()`/its cleanup interval behind
+  `require.main === module`, so requiring it for tests never binds a
+  real port.
 - **Production deploy**: `flyctl deploy` from `server/` (app:
   `remote-eyes-server`, config in `server/fly.toml` + `server/Dockerfile`).
   Always-on (`min_machines_running = 1`) — see Architecture below for why.
