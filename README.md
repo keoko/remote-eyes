@@ -18,6 +18,41 @@ install on the helper's side, as little friction as possible on the phone.
 5. The session is torn down when either side disconnects or after a 5-minute
    TTL.
 
+The signaling handshake (step 4) is the fiddliest part to hold in your
+head from prose alone, since it's a real back-and-forth relayed entirely
+through the server — the phone and helper never talk to each other
+directly until the final media stream:
+
+```mermaid
+sequenceDiagram
+    participant Phone as Phone (Android app)
+    participant Server as Signaling server
+    participant Helper as Helper (browser)
+
+    Phone->>Server: create (+ app token)
+    Server-->>Phone: help-code (6-digit code)
+    Note over Phone,Helper: Code is read aloud, typed into the helper page
+
+    Helper->>Server: join (code)
+    Server-->>Helper: joined
+    Server-->>Phone: helper-connected
+
+    Phone->>Server: signal: offer (SDP)
+    Server->>Helper: signal: offer (SDP)
+    Helper->>Server: signal: answer (SDP)
+    Server->>Phone: signal: answer (SDP)
+
+    par ICE candidates, both directions
+        Phone->>Server: signal: ice-candidate
+        Server->>Helper: signal: ice-candidate
+    and
+        Helper->>Server: signal: ice-candidate
+        Server->>Phone: signal: ice-candidate
+    end
+
+    Phone-->>Helper: Screen video (direct, via STUN, or via TURN relay — never through the signaling server)
+```
+
 ## Project layout
 
 - `android/` — the Android app. Captures the screen via `MediaProjection` and
