@@ -16,6 +16,9 @@ val signalingUrl: String =
     localProperties.getProperty("SIGNALING_URL")
         ?: "ws://192.168.2.114:8080"
 
+val appToken: String =
+    localProperties.getProperty("APP_TOKEN") ?: ""
+
 android {
     namespace = "com.example.remoteeyes"
     compileSdk = 36
@@ -28,6 +31,7 @@ android {
         versionName = "1.0"
 
         buildConfigField("String", "SIGNALING_URL", "\"$signalingUrl\"")
+        buildConfigField("String", "APP_TOKEN", "\"$appToken\"")
     }
 
     buildFeatures {

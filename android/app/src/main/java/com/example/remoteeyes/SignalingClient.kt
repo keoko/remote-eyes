@@ -81,7 +81,7 @@ class SignalingClient(
     }
 
     fun requestSession() {
-        send(JSONObject().put("type", "create"))
+        send(JSONObject().put("type", "create").put("token", BuildConfig.APP_TOKEN))
     }
 
     fun sendSignal(payload: JSONObject) {

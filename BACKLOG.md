@@ -106,6 +106,44 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   currently-active session in `sessions`; an invalid/missing code gets
   STUN-only back instead of an error, matching the existing fetch-failure
   fallback shape in both clients.
+- [x] Prevent abuse of the public server (`remote-eyes-server.fly.dev`) —
+  `join` is rate-limited and `/ice-config` requires an active session
+  code, but `create` itself is free and unauthenticated, which
+  undermines both: anyone can call `create` to mint a code for free, then
+  immediately harvest real Metered TURN credentials via
+  `/ice-config?code=...` for entirely unrelated use, or just spam
+  `create` to keep the scale-to-zero machine artificially warm (turning
+  the ~cents/month bill into something closer to the always-on ~$2/month
+  cost, as griefing rather than gain). Three-part fix, all reusing
+  existing patterns rather than adding real authentication (which this
+  app's threat model doesn't warrant — see `AGENTS.md`):
+  1. **A shared app token on `create` only** — `join`/`ice-config` don't
+     need one, since they already require an existing valid code, which
+     (once `create` is gated) can now only come from a legitimate phone
+     session. Generated once, stored in `android/local.properties`
+     (gitignored) → `BuildConfig.APP_TOKEN`, same pattern as
+     `SIGNALING_URL`; checked against a Fly secret in `server.js`. Not
+     committed anywhere, so reading the public repo reveals nothing —
+     though it does end up compiled into the distributed APK, recoverable
+     by anyone who decompiles it. Raises the bar from "read GitHub" to
+     "decompile an APK," proportionate to this app's actual threat model,
+     not a claim of real cryptographic protection.
+  2. **Rate-limit `create`** the same way `join` already is (reuse
+     `isRateLimited`), bounding how many free sessions/credential-mints
+     any one IP can rack up per window even before the token check.
+  3. **Only serve real TURN credentials once a session has both sides** —
+     `/ice-config` currently only checks `sessions.has(code)`; also
+     require `session.helper` to be set, so a bare `create` (even with a
+     valid token) isn't enough on its own to harvest credentials.
+
+  **Verified against the live production server**: `create` with no/wrong
+  token gets a deliberately generic rejection; 11+ `create` attempts with
+  a valid token get rate-limited (10th succeeds, 11th doesn't); a code
+  from `create` alone returns STUN-only from `/ice-config`, and only
+  returns real TURN entries after a helper actually joins. `local.properties`
+  → `BuildConfig.APP_TOKEN` confirmed correct in a real built APK. **Not
+  yet confirmed on-device** — needs a rebuild/reinstall and a real
+  session to prove the token round-trips correctly end-to-end.
 - [ ] Add automated tests — `server/` now has one real test
   (`test/helper-ice-race.test.js`, run via `npm test`), added as a
   regression test while fixing a real bug, not as a deliberate coverage

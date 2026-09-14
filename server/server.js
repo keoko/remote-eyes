@@ -7,24 +7,25 @@ const path = require("path");
 
 const PORT = 8080;
 const SESSION_TTL = 5 * 60 * 1000;
-const JOIN_RATE_LIMIT = 10;
-const JOIN_RATE_WINDOW = SESSION_TTL;
+const RATE_LIMIT = 10;
+const RATE_WINDOW = SESSION_TTL;
 
 const sessions = new Map();
 const joinAttempts = new Map();
+const createAttempts = new Map();
 
-function isRateLimited(ip) {
+function isRateLimited(attempts, ip) {
     const now = Date.now();
-    const entry = joinAttempts.get(ip);
+    const entry = attempts.get(ip);
 
-    if (!entry || now - entry.windowStart > JOIN_RATE_WINDOW) {
-        joinAttempts.set(ip, { count: 1, windowStart: now });
+    if (!entry || now - entry.windowStart > RATE_WINDOW) {
+        attempts.set(ip, { count: 1, windowStart: now });
         return false;
     }
 
     entry.count += 1;
 
-    return entry.count > JOIN_RATE_LIMIT;
+    return entry.count > RATE_LIMIT;
 }
 
 let turnCache = { iceServers: [], expiresAt: 0 };
@@ -192,7 +193,8 @@ const server = http.createServer((req, res) => {
     if (req.url.split("?")[0] === "/ice-config") {
         const query = new URLSearchParams(req.url.split("?")[1] || "");
         const code = query.get("code");
-        const hasActiveSession = code != null && sessions.has(code);
+        const session = code != null ? sessions.get(code) : null;
+        const hasActiveSession = session != null && session.helper != null;
 
         const respond = (turnServers) => {
             const iceServers = [
@@ -253,11 +255,27 @@ wss.on("connection", (ws, req) => {
 
         switch (message.type) {
             case "create":
+                if (message.token !== process.env.APP_TOKEN) {
+                    send(ws, {
+                        type: "error",
+                        message: "Unable to create session. Please try again."
+                    });
+                    break;
+                }
+
+                if (isRateLimited(createAttempts, ws.ip)) {
+                    send(ws, {
+                        type: "error",
+                        message: "Too many attempts. Please wait a few minutes and try again."
+                    });
+                    break;
+                }
+
                 createSession(ws);
                 break;
 
             case "join":
-                if (isRateLimited(ws.ip)) {
+                if (isRateLimited(joinAttempts, ws.ip)) {
                     send(ws, {
                         type: "error",
                         message: "Too many attempts. Please wait a few minutes and try again."

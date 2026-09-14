@@ -53,18 +53,20 @@ protocol.
   one side without updating the other two breaks the app silently — there's
   no schema/type checking across the boundary.
 
-- **Session/role model** (`server/server.js`): the phone sends `create` and
-  gets back a random 6-digit code with a 5-minute TTL; a helper sends `join`
-  with that code. The server only relays SDP offers/answers and ICE
-  candidates between the connection tagged `role: "phone"` and the one
-  tagged `role: "helper"` — it has no understanding of WebRTC itself.
-  `join` attempts are rate-limited per source IP (`joinAttempts` Map, 10
-  attempts per 5-minute window, matching `SESSION_TTL`) — proportionate to
-  this app's actual threat model (a casual stranger guessing codes, not a
-  distributed attacker with many IPs), not hardened against a
-  sophisticated attack. Sessions live in an in-memory `Map`, **not shared
-  across machines** — this is why the Fly app runs exactly one machine
-  (see Deployment below).
+- **Session/role model** (`server/server.js`): the phone sends `create`
+  (with `token` matching the `APP_TOKEN` Fly secret — see ICE/TURN below,
+  same mechanism) and gets back a random 6-digit code with a 5-minute
+  TTL; a helper sends `join` with that code. The server only relays SDP
+  offers/answers and ICE candidates between the connection tagged
+  `role: "phone"` and the one tagged `role: "helper"` — it has no
+  understanding of WebRTC itself. Both `create` and `join` are
+  rate-limited per source IP (`isRateLimited(attempts, ip)`, generic over
+  two separate `Map`s, 10 attempts per 5-minute window matching
+  `SESSION_TTL`) — proportionate to this app's actual threat model (a
+  casual stranger, not a distributed attacker with many IPs), not
+  hardened against a sophisticated attack. Sessions live in an in-memory
+  `Map`, **not shared across machines** — this is why the Fly app runs
+  exactly one machine (see Deployment below).
 
 - **Android service architecture**: `MainActivity` only handles the UI and
   the `MediaProjection` permission flow; it hands off to
@@ -92,13 +94,27 @@ protocol.
   baking in even a gitignored secret would still ship it to every device.
   Instead, `server/server.js` caches a 24h TURN credential
   (`getTurnIceServers()`) and serves it, plus the STUN entry, from
-  `GET /ice-config?code=<active session code>` — gated behind a
-  currently-active session (checked against the same `sessions` map) since
-  this repo is public and an unauthenticated version of this endpoint would
-  let anyone harvest working TURN credentials. An invalid/missing code gets
+  `GET /ice-config?code=<active session code>` — gated behind the session
+  having **both** a phone and a helper (`session.helper != null`, not just
+  `sessions.has(code)`), since a bare `create` shouldn't be enough on its
+  own to harvest credentials. An invalid/missing/create-only code gets
   STUN-only back, not an error. `helper.html` fetches it when a code is
   submitted; `ScreenCaptureService.kt` fetches it in
   `fetchIceServersAndOffer()` using the code captured in `onHelpCode()`.
+
+- **`APP_TOKEN`**: since `join`/`ice-config` both require an existing
+  valid session code, the one action that lets an abuser bootstrap a code
+  for free is `create` — so that's the one gated behind a shared token
+  (`android/local.properties` → `BuildConfig.APP_TOKEN`, checked against
+  the same value as a Fly secret), rather than trying to protect every
+  endpoint. Same reasoning as the Metered key about not committing it,
+  but a materially weaker guarantee: this token *does* end up compiled
+  into the distributed APK (unlike Metered's key, which never leaves this
+  server), recoverable by decompiling it. That's a deliberate, accepted
+  trade-off — raises the bar from "read the public repo" to "decompile an
+  APK," proportionate to deterring casual abuse, not a claim of real
+  cryptographic protection. `helper.html` never calls `create` and so
+  never needs the token.
 
 ## Deployment
 
