@@ -22,9 +22,8 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   fixed a leftover from the UI redesign while touching these strings:
   `code_label` ("Your code") existed but was never actually wired into
   `MainActivity.kt` — added a small label above the big code display.
-  **Neither translation reviewed by a native speaker** — drafted carefully
-  but should be checked on a real device with the system language set to
-  each.
+  **Both translations reviewed and confirmed good by the (native-speaker)
+  user.**
 - [x] Redesign the Android UI to be dead simple for elderly users — one
   toggle button (green "Share my screen" ↔ red "Stop sharing") instead of
   two always-visible buttons; the help code gets its own huge (72sp), bold,
@@ -141,9 +140,9 @@ Research → Plan → Implement pass; check it off (or delete it) once done.
   a valid token get rate-limited (10th succeeds, 11th doesn't); a code
   from `create` alone returns STUN-only from `/ice-config`, and only
   returns real TURN entries after a helper actually joins. `local.properties`
-  → `BuildConfig.APP_TOKEN` confirmed correct in a real built APK. **Not
-  yet confirmed on-device** — needs a rebuild/reinstall and a real
-  session to prove the token round-trips correctly end-to-end.
+  → `BuildConfig.APP_TOKEN` confirmed correct in a real built APK, and
+  **confirmed end-to-end on-device**: rebuilt, reinstalled, real session
+  created and joined normally with the token wired through.
 - [ ] Add automated tests — `server/` now has one real test
   (`test/helper-ice-race.test.js`, run via `npm test`), added as a
   regression test while fixing a real bug, not as a deliberate coverage
