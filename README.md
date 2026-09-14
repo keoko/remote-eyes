@@ -27,13 +27,17 @@ install on the helper's side, as little friction as possible on the phone.
 
 ## Running the server
 
-**Production** is deployed to Fly.io at `wss://remote-eyes-server.fly.dev`
-(and `https://remote-eyes-server.fly.dev/helper` for the browser page), a
-single machine (never more, since sessions live in an in-memory `Map` not
-shared across machines) that scales to zero when idle. Deploy changes with
-`flyctl deploy` from `server/`. TURN credentials (Metered.ca) are supplied
-via `flyctl secrets set METERED_DOMAIN=... METERED_SECRET_KEY=...` — never
-committed to the repo.
+**Production** is deployed to Fly.io (app name in `server/fly.toml`; its
+`wss://` / `https://<app>.fly.dev/helper` address is intentionally not
+printed here — see below), a single machine (never more, since sessions
+live in an in-memory `Map` not shared across machines) that scales to zero
+when idle. Deploy changes with `flyctl deploy` from `server/`. Secrets
+(never committed to the repo) are supplied via `flyctl secrets set`:
+- `METERED_DOMAIN` / `METERED_SECRET_KEY` — Metered.ca TURN credentials.
+- `APP_TOKEN` — required on the signaling protocol's `create` message.
+  Without a matching token, the server won't mint a session at all — this
+  is what keeps the deployed URL from being freely usable by anyone who
+  finds it (see `AGENTS.md`'s architecture section for the full reasoning).
 
 **Locally**, for development:
 ```
@@ -53,11 +57,18 @@ actual use (`server/test/helper-ice-race.test.js`).
 
 ## Running the Android app
 
-1. Create `android/local.properties` (gitignored) with
-   `SIGNALING_URL=wss://remote-eyes-server.fly.dev` to point at production,
-   or `ws://10.0.2.2:8080` for an emulator talking to a local server, or
-   your machine's LAN IP for a real device on a local server. No source
-   edit needed — this is read into a `BuildConfig` field at build time.
+1. Create `android/local.properties` (gitignored) with:
+   ```
+   SIGNALING_URL=wss://<your-app>.fly.dev
+   APP_TOKEN=<same value as the server's APP_TOKEN secret>
+   ```
+   (or `SIGNALING_URL=ws://10.0.2.2:8080` for an emulator talking to a
+   local server, or your machine's LAN IP for a real device on a local
+   server — for local testing, set matching `APP_TOKEN` values here and
+   as an env var on the local server, e.g. `APP_TOKEN=devtoken node
+   server.js`; an *unset* server-side `APP_TOKEN` still rejects an empty
+   client token, since `"" !== undefined`). No source edit needed — both
+   are read into `BuildConfig` fields at build time.
 2. **On the phone**, enable Developer Options (Settings → About phone →
    tap "Build number" 7 times) and turn on USB debugging inside it, then
    connect the phone via USB. Accept the "Allow USB debugging?" prompt
